@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>BANKING SYSTEM</title>
+</head>
+<body>
+    <h1 style="text-align: center;">BANKING SYSTEM</h1>
+    <form method="post" name="send_code" action="" style="text-align: center;margin-left: 30%;margin-right: 30%;">
+        <fieldset>
+            <legend>CODE REQUEST</legend>
+            <label for="email">Email:</label><br>
+            <input type="text" id="email" name="email" required><br>
+            <label for="passwd">Password:</label><br>
+            <input type="text" id="passwd" name="passwd"><br><br>
+            <input type="submit" value="Send code"><br><br>
+        </fieldset>
+    </form>
+    <br>
+    <p style="text-align: center;">{{ message }}</p>
+    <br><br><br>
+    <form method="post" name="check_code" action="" style="text-align: center;margin-left: 30%;margin-right: 30%;">
+        <fieldset>
+            <legend>LOGIN</legend>
+            <label for="code">Code</label><br>
+            <input type="text" id="code" name="code" required><br><br>
+            <input type="submit" value="LOGIN"><br><br>
+        </fieldset>
+    </form>
+</body>

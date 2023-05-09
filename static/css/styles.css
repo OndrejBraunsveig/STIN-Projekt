@@ -1,0 +1,10 @@
+:root{
+    --primary: hsl(0,0%,0%);
+    --secondary: hsl(0, 2%, 82%);
+}
+
+html, body {
+    background-color: var(--secondary);
+    padding: 0;
+    margin: 0;
+}
