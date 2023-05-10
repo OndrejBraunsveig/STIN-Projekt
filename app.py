@@ -10,7 +10,7 @@ email = "braunsveigondrej@gmail.com"
 passwd = "letadlo123"
 
 @app.route('/', methods=['GET', 'POST'])
-def form():
+def login():
     if request.method == 'POST':
         if 'email' in request.form.keys():
             if email == request.form['email'] and passwd == request.form['passwd']:
@@ -33,8 +33,10 @@ def form():
         file.write("")
     return render_template('index.html')
 
-@app.route('/account/<username>')
+@app.route('/account/<username>', methods=['GET', 'POST'])
 def account(username):
+    if request.method == 'POST':
+        return redirect(url_for('login'))
     return render_template('account.html', jmeno=username)
 
 def send_mail(code):
