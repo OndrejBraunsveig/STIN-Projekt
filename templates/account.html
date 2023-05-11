@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>BANKING SYSTEM</title>
+</head>
+<body>
+    <header>
+        <p> {{ jmeno }} </p>
+        <form method="post">
+            <input type="submit" class="logout" value="LOGOUT" />
+        </form>
+    </header>
+    <div class="splitContainer">
+        <div>
+            <form class="transaction" method="post" action="">
+                <fieldset>
+                    <h2>Deposit</h2>
+                    <label for="amount">Amount</label><br>
+                    <input type="number" id="amount" name="amount" required><br>
+                    <label for="currency">Currency</label><br>
+                    <input type="text" id="currency" name="currency"><br><br>
+                    <input type="submit" value="Deposit">
+                </fieldset>
+            </form>
+        </div>
+        <div>
+            <form class="transaction" method="post" action="">
+                <fieldset>
+                    <h2>Transaction</h2>
+                    <label for="receiver">Receiver</label><br>
+                    <input type="text" id="receiver" name="reciever" required><br>
+                    <label for="amount">Amount</label><br>
+                    <input type="number" id="amount" name="amount" required><br>
+                    <label for="currency">Currency</label><br>
+                    <input type="text" id="currency" name="currency"><br><br>
+                    <input type="submit" value="Send">
+                </fieldset>
+            </form>
+        </div>
+    </div>
+    <div class="splitContainer">
+        <ul>
+            {% for transaction in transaction_history %}
+            <li>{{ transaction[1] }}</li>
+            {% endfor %}
+        </ul>
+        <ul>
+            {% for transaction in transaction_history %}
+            <li>{{ transaction[1] }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
