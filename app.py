@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for
+import requests
+
 import datetime
 import re
 import random
@@ -30,8 +32,10 @@ def login():
             if temp == request.form['code']:
                 return redirect(url_for('account', username=email))
             return render_template('index.html', message='Wrong verification code!')
-    
-    parse_rates()
+    # Check if exchange rates in database are current and if not, download current ones and parse them into json
+    if are_rates_outdated():
+        download_rates()
+        parse_rates()
     # Remove verification code validity on webserver start
     with open('code.txt', 'w') as file:
         file.write("")
@@ -64,6 +68,22 @@ def send_mail(code):
         text = msg.as_string()
         server.sendmail(email, email, text)
 
+def are_rates_outdated():
+    with open('data/exchange_rates.json', 'r') as file:
+        dictionary = json.load(file)
+    today = datetime.datetime.now()
+    if dictionary['month'] == today.month and dictionary['year'] == today.year:
+        dic_total_min = dictionary['hour']*60+dictionary['minute']
+        today_total_min = today.hour*60+today.minute
+        if today.day-dictionary['day'] == 0:
+            if (dic_total_min-(14*60+30))*(today_total_min-(14*60+30)) > 0:
+                return False
+        if today.day-dictionary['day'] == 1:
+            if (dic_total_min-(14*60+30))*(today_total_min-(14*60+30)) < 0:
+                return False
+    return True
+
+
 def parse_rates():
     with open('data/denni_kurz.txt', 'r') as file:
         file.readline()
@@ -71,6 +91,7 @@ def parse_rates():
         lines = file.readlines()
     today = datetime.datetime.now()
     dictionary = {
+        "minute": today.minute,
         "hour": today.hour,
         "day": today.day,
         "month": today.month,
@@ -84,14 +105,10 @@ def parse_rates():
     with open('data/exchange_rates.json', 'w') as file:
         json.dump(dictionary, file)
 
-
-
-def check_rates():
-    with open('data/denni_kurz.txt', 'r') as file:
-        line = file.readline()
-    date = list(map(int, re.split(r'[. ]', line)[:3]))
-    today = datetime.datetime.now()
-
+def download_rates():
+    url = 'https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/denni_kurz.txt'
+    req = requests.get(url, allow_redirects=True)
+    open('data/denni_kurz.txt', 'wb').write(req.content)
 
 if __name__ == '__main__':
     app.run(debug=True)
