@@ -44,4 +44,9 @@ def test_account(client):
     response = client.post('/account/test@example.com')
     assert response.status_code == 302
     assert response.headers['Location'] == '/'
-    
+
+def test_parse_rates():
+    m_app.parse_rates()
+
+def test_download_rates():
+    m_app.download_rates()
