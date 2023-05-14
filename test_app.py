@@ -1,10 +1,11 @@
-from flask import Flask
+from flask import Flask, session
 import pytest
 import app as m_app
 
 @pytest.fixture
 def client():
     app = Flask(__name__)
+    app.config['SECRET_KEY'] = 'abcd'
     app.config['TESTING'] = True
 
     app.route('/', methods=['GET', 'POST'])(m_app.login)
@@ -31,8 +32,7 @@ def test_login(client):
     assert response.status_code == 200
     assert b"Verification code has been sent to your email" in response.data
 
-    with open('code.txt', 'r') as file:
-        code = file.readline()
+    code = session.get('code')
     response = client.post('/', data={'code': code})
     assert response.status_code == 302
     assert response.headers['Location'] == '/account/braunsveigondrej@gmail.com'
@@ -44,4 +44,9 @@ def test_account(client):
     response = client.post('/account/test@example.com')
     assert response.status_code == 302
     assert response.headers['Location'] == '/'
-    
+
+def test_parse_rates():
+    m_app.parse_rates()
+
+def test_download_rates():
+    m_app.download_rates()

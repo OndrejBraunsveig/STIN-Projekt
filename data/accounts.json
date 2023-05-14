@@ -1,0 +1,22 @@
+[{
+    "email": "braunsveigondrej@gmail.com",
+    "passwd": "letadlo123",
+    "account_number": 12345691,
+    "balances": {
+        "CZK": 0,
+        "EUR": 0,
+        "USD": 0
+    },
+    "history": {}
+},
+{
+    "email": "braunsveigondrej@seznam.cz",
+    "passwd": "1234",
+    "account_number": 12345692,
+    "balances": {
+        "CZK": 0,
+        "EUR": 0,
+        "USD": 0
+    },
+    "history": {}
+}]
