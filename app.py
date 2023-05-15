@@ -37,6 +37,10 @@ def login():
         parse_rates()
     # Remove verification code validity on webserver start
     session['code'] = ""
+    deposit(1000, 'CZK', 1234567891)
+    send_payment(10, 'CZK', 1234567891, 1234567899)
+    send_payment(10, 'EUR', 1234567891, 1234567899)
+    send_payment(1000, 'EUR', 1234567891, 1234567899)
     return render_template('index.html')
 
 @app.route('/account/<username>', methods=['GET', 'POST'])
@@ -92,7 +96,8 @@ def parse_rates():
         "hour": today.hour,
         "day": today.day,
         "month": today.month,
-        "year": today.year
+        "year": today.year,
+        "CZK": 1
     }
     for line in lines:
         line = line.replace(',', '.')
@@ -106,6 +111,47 @@ def download_rates():
     url = 'https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/denni_kurz.txt'
     req = requests.get(url, allow_redirects=True)
     open('data/denni_kurz.txt', 'wb').write(req.content)
+
+def deposit(amount, currency, to):
+    with open('data/accounts.json', 'r') as file:
+        accounts = json.load(file)
+    today = datetime.datetime.today()
+    time = f"{today.day}.{today.month}.{today.year} {today.hour}:{today.minute}:{today.second}"
+    for account in accounts:
+        if account['account_number'] == to:
+            if currency in account['balances'].keys():
+                account['balances'][currency] = account['balances'][currency]+amount
+            else:
+                account['balances'][currency] = amount
+            account['history'][time] = f"+{amount} {currency}"
+            with open('data/accounts.json', 'w') as file:
+                        json.dump(accounts, file)
+
+def send_payment(amount, currency, by, to):
+    with open('data/accounts.json', 'r') as file:
+        accounts = json.load(file)
+    with open('data/exchange_rates.json', 'r') as file:
+        rates = json.load(file)
+    in_czk = amount*rates[currency]
+    today = datetime.datetime.today()
+    time = f"{today.day}.{today.month}.{today.year} {today.hour}:{today.minute}:{today.second}"
+    for account in accounts:
+        if account['account_number'] == by:
+            if currency in account['balances'].keys():
+                if account['balances'][currency] >= amount:
+                    account['balances'][currency] = account['balances'][currency]-amount
+                    account['history'][time] = f"{to}: -{amount} {currency}"
+                    with open('data/accounts.json', 'w') as file:
+                        json.dump(accounts, file)
+                    return True
+            if account['balances']['CZK'] >= in_czk:
+                account['balances']['CZK'] = account['balances']['CZK']-in_czk
+                account['history'][time] = f"{to}: -{in_czk} CZK"
+                with open('data/accounts.json', 'w') as file:
+                        json.dump(accounts, file)
+                return True
+    return False
+                
 
 if __name__ == '__main__':
     app.run(debug=True)
