@@ -50,14 +50,18 @@ def account(number):
             if are_rates_outdated():
                 download_rates()
                 parse_rates()
-            account = deposit(int(request.form['dep_amount']), request.form['currency'], int(number))
+            amount = int(request.form['dep_amount'])
+            if amount >= 0:
+                account = deposit(amount, request.form['currency'], int(number))
         # Send payment form
         elif 'send_amount' in request.form.keys():
             # Check if exchange rates in database are current and if not, download current ones and parse them into json
             if are_rates_outdated():
                 download_rates()
                 parse_rates()
-            account = send_payment(int(request.form['send_amount']), request.form['currency'], int(number), int(request.form['receiver']))
+            amount = int(request.form['send_amount'])
+            if amount >= 0:
+                account = send_payment(amount, request.form['currency'], int(number), int(request.form['receiver']))
         else:
             return redirect(url_for('login'))
     history = list(account['history'].values())
@@ -133,48 +137,48 @@ def download_rates():
 def deposit(amount, currency, to):
     with open('data/accounts.json', 'r') as file:
         accounts = json.load(file)
+    with open('data/exchange_rates.json', 'r') as file:
+        rates = json.load(file)
     today = datetime.datetime.today()
     time = f"{today.day}.{today.month}.{today.year} {today.hour}:{today.minute}:{today.second}"
     for account in accounts:
         if account['account_number'] == to:
-            if currency in account['balances'].keys():
-                account['balances'][currency] = account['balances'][currency]+amount
-            else:
-                account['balances'][currency] = amount
-            account['history'][time] = f"+{amount} {currency}"
-            with open('data/accounts.json', 'w') as file:
-                file.write(json.dumps(accounts, indent=4))
+            if currency in rates.keys():
+                if currency in account['balances'].keys():
+                    account['balances'][currency] = account['balances'][currency]+amount
+                else:
+                    account['balances'][currency] = amount
+                account['history'][time] = f"+{amount} {currency}"
+                with open('data/accounts.json', 'w') as file:
+                    file.write(json.dumps(accounts, indent=4))
             return account
+        
 def send_payment(amount, currency, by, to):
     # Load data from json files
     with open('data/accounts.json', 'r') as file:
         accounts = json.load(file)
     with open('data/exchange_rates.json', 'r') as file:
         rates = json.load(file)
-
-    in_czk = amount*rates[currency]
     today = datetime.datetime.today()
     time = f"{today.day}.{today.month}.{today.year} {today.hour}:{today.minute}:{today.second}"
     # Find account in database and do action based on bilances present on the account
     for account in accounts:
         if account['account_number'] == by:
-            if currency in account['balances'].keys():
-                if account['balances'][currency] >= amount:
-                    account['balances'][currency] = account['balances'][currency]-amount
-                    account['history'][time] = f"{to}: -{amount} {currency}"
+            if currency in rates.keys():
+                if currency in account['balances'].keys():
+                    if account['balances'][currency] >= amount:
+                        account['balances'][currency] = account['balances'][currency]-amount
+                        account['history'][time] = f"{to}: -{amount} {currency}"
+                        with open('data/accounts.json', 'w') as file:
+                            file.write(json.dumps(accounts, indent=4))
+                        return account      
+                in_czk = amount*rates[currency]
+                if account['balances']['CZK'] >= in_czk:
+                    account['balances']['CZK'] = account['balances']['CZK']-in_czk
+                    account['history'][time] = f"{to}: -{in_czk:.2f} CZK"
                     with open('data/accounts.json', 'w') as file:
-                        file.write(json.dumps(accounts, indent=4))
-                    return account
-            
-            in_czk = amount*rates[currency]
-            if account['balances']['CZK'] >= in_czk:
-                account['balances']['CZK'] = account['balances']['CZK']-in_czk
-                account['history'][time] = f"{to}: -{in_czk} CZK"
-                with open('data/accounts.json', 'w') as file:
-                        file.write(json.dumps(accounts, indent=4))
-                return account
-            break
-    return account
+                            file.write(json.dumps(accounts, indent=4))
+            return account
                 
 
 if __name__ == '__main__':
