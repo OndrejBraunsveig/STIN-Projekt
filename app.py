@@ -62,8 +62,9 @@ def account(number):
             return redirect(url_for('login'))
     history = list(account['history'].values())
     history.reverse()
+    sliced_history = history[:10]
     return render_template('account.html', jmeno=number, balances=list(account['balances'].items()),
-                            transaction_history=history
+                            transaction_history=sliced_history
                             )
 
 def send_mail(code):
