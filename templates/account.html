@@ -19,10 +19,10 @@
             <form class="transaction" method="post" action="">
                 <fieldset>
                     <h2>Deposit</h2>
-                    <label for="amount">Amount</label><br>
-                    <input type="number" id="amount" name="amount" required><br>
+                    <label for="dep_amount">Amount</label><br>
+                    <input type="number" id="dep_amount" name="dep_amount" required><br>
                     <label for="currency">Currency</label><br>
-                    <input type="text" id="currency" name="currency"><br><br>
+                    <input type="text" id="currency" name="currency" required><br><br>
                     <input type="submit" value="Deposit">
                 </fieldset>
             </form>
@@ -32,25 +32,25 @@
                 <fieldset>
                     <h2>Transaction</h2>
                     <label for="receiver">Receiver</label><br>
-                    <input type="text" id="receiver" name="reciever" required><br>
-                    <label for="amount">Amount</label><br>
-                    <input type="number" id="amount" name="amount" required><br>
+                    <input type="text" id="receiver" name="receiver" required><br>
+                    <label for="send_amount">Amount</label><br>
+                    <input type="number" id="send_amount" name="send_amount" required><br>
                     <label for="currency">Currency</label><br>
-                    <input type="text" id="currency" name="currency"><br><br>
+                    <input type="text" id="currency" name="currency" required><br><br>
                     <input type="submit" value="Send">
                 </fieldset>
             </form>
         </div>
     </div>
     <div class="splitContainer">
-        <ul>
-            {% for transaction in transaction_history %}
-            <li>{{ transaction[1] }}</li>
+        <ul style="align-items: center;">
+            {% for balance in balances %}
+            <li>{{ '{:.2f}'.format(balance[1]) }}  {{ balance[1] }} {{ balance[0] }}</li>
             {% endfor %}
         </ul>
-        <ul>
+        <ul style="align-items: center;">
             {% for transaction in transaction_history %}
-            <li>{{ transaction[1] }}</li>
+            <li>{{ transaction }}</li>
             {% endfor %}
         </ul>
     </div>

@@ -18,6 +18,7 @@ def login():
     with open('data/accounts.json', 'r') as file:
         accounts = json.load(file)
     if request.method == 'POST':
+        # Send code form
         if 'email' in request.form.keys():
             for account in accounts:
                 if request.form['email'] == account['email'] and request.form['passwd'] == account['passwd']:
@@ -27,23 +28,43 @@ def login():
                     session['code'] = code
                     return render_template('index.html', message='Verification code has been sent to your email')
             return render_template('index.html', message='Incorrect email or password!')
-        
+        # Login form
         if request.form['code'] == session.get('code'):
-            return redirect(url_for('account', username=session.get('current_acc')['email']))
+            return redirect(url_for('account', number=session.get('current_acc')['account_number']))
         return render_template('index.html', message='Wrong verification code!')
-    # Check if exchange rates in database are current and if not, download current ones and parse them into json
-    if are_rates_outdated():
-        download_rates()
-        parse_rates()
     # Remove verification code validity on webserver start
     session['code'] = ""
     return render_template('index.html')
 
-@app.route('/account/<username>', methods=['GET', 'POST'])
-def account(username):
+@app.route('/account/<number>', methods=['GET', 'POST'])
+def account(number):
+    with open('data/accounts.json', 'r') as file:
+        accounts = json.load(file)
+    for loaded_account in accounts:
+        if loaded_account['account_number'] == int(number):
+            account = loaded_account
     if request.method == 'POST':
-        return redirect(url_for('login'))
-    return render_template('account.html', jmeno=username)
+        # Deposit form
+        if 'dep_amount' in request.form.keys():
+            # Check if exchange rates in database are current and if not, download current ones and parse them into json
+            if are_rates_outdated():
+                download_rates()
+                parse_rates()
+            account = deposit(int(request.form['dep_amount']), request.form['currency'], int(number))
+        # Send payment form
+        elif 'send_amount' in request.form.keys():
+            # Check if exchange rates in database are current and if not, download current ones and parse them into json
+            if are_rates_outdated():
+                download_rates()
+                parse_rates()
+            account = send_payment(int(request.form['send_amount']), request.form['currency'], int(number), int(request.form['receiver']))
+        else:
+            return redirect(url_for('login'))
+    history = list(account['history'].values())
+    history.reverse()
+    return render_template('account.html', jmeno=number, balances=list(account['balances'].items()),
+                            transaction_history=history
+                            )
 
 def send_mail(code):
     # Set up the email parameters
@@ -92,7 +113,8 @@ def parse_rates():
         "hour": today.hour,
         "day": today.day,
         "month": today.month,
-        "year": today.year
+        "year": today.year,
+        "CZK": 1
     }
     for line in lines:
         line = line.replace(',', '.')
@@ -100,12 +122,59 @@ def parse_rates():
         split_line = line.split('|')
         dictionary[split_line[3]] = float(split_line[4])/float(split_line[2])
     with open('data/exchange_rates.json', 'w') as file:
-        json.dump(dictionary, file)
+        file.write(json.dumps(dictionary, indent=4))
 
 def download_rates():
     url = 'https://www.cnb.cz/cs/financni-trhy/devizovy-trh/kurzy-devizoveho-trhu/kurzy-devizoveho-trhu/denni_kurz.txt'
     req = requests.get(url, allow_redirects=True)
     open('data/denni_kurz.txt', 'wb').write(req.content)
+
+def deposit(amount, currency, to):
+    with open('data/accounts.json', 'r') as file:
+        accounts = json.load(file)
+    today = datetime.datetime.today()
+    time = f"{today.day}.{today.month}.{today.year} {today.hour}:{today.minute}:{today.second}"
+    for account in accounts:
+        if account['account_number'] == to:
+            if currency in account['balances'].keys():
+                account['balances'][currency] = account['balances'][currency]+amount
+            else:
+                account['balances'][currency] = amount
+            account['history'][time] = f"+{amount} {currency}"
+            with open('data/accounts.json', 'w') as file:
+                file.write(json.dumps(accounts, indent=4))
+            return account
+def send_payment(amount, currency, by, to):
+    # Load data from json files
+    with open('data/accounts.json', 'r') as file:
+        accounts = json.load(file)
+    with open('data/exchange_rates.json', 'r') as file:
+        rates = json.load(file)
+
+    in_czk = amount*rates[currency]
+    today = datetime.datetime.today()
+    time = f"{today.day}.{today.month}.{today.year} {today.hour}:{today.minute}:{today.second}"
+    # Find account in database and do action based on bilances present on the account
+    for account in accounts:
+        if account['account_number'] == by:
+            if currency in account['balances'].keys():
+                if account['balances'][currency] >= amount:
+                    account['balances'][currency] = account['balances'][currency]-amount
+                    account['history'][time] = f"{to}: -{amount} {currency}"
+                    with open('data/accounts.json', 'w') as file:
+                        file.write(json.dumps(accounts, indent=4))
+                    return account
+            
+            in_czk = amount*rates[currency]
+            if account['balances']['CZK'] >= in_czk:
+                account['balances']['CZK'] = account['balances']['CZK']-in_czk
+                account['history'][time] = f"{to}: -{in_czk} CZK"
+                with open('data/accounts.json', 'w') as file:
+                        file.write(json.dumps(accounts, indent=4))
+                return account
+            break
+    return account
+                
 
 if __name__ == '__main__':
     app.run(debug=True)
