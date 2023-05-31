@@ -166,21 +166,28 @@ def send_payment(amount, currency, by, to):
         if account['account_number'] == by:
             if currency in rates.keys():
                 if currency in account['balances'].keys():
-                    if account['balances'][currency] >= amount:
-                        account['balances'][currency] = account['balances'][currency]-amount
-                        account['history'][time] = f"{to}: -{amount} {currency}"
+                    if account['balances'][currency]*1.1 > amount:
+                        minus = amount
+                        if amount > account['balances'][currency]:
+                            amount = (account['balances'][currency]-amount)*1.1
+                            minus = account['balances'][currency]-amount
+                        account['balances'][currency] = account['balances'][currency]-minus
+                        account['history'][time] = f"{to}: -{minus:.2f} {currency}"
                         with open('data/accounts.json', 'w') as file:
                             file.write(json.dumps(accounts, indent=4))
-                        return account      
+                        return account
                 in_czk = amount*rates[currency]
-                if account['balances']['CZK'] >= in_czk:
-                    account['balances']['CZK'] = account['balances']['CZK']-in_czk
-                    account['history'][time] = f"{to}: -{in_czk:.2f} CZK"
+                if account['balances']['CZK']*1.1 > in_czk:
+                    minus = in_czk
+                    if in_czk > account['balances']['CZK']:
+                        in_czk = (account['balances']['CZK']-in_czk)*1.1
+                        minus = account['balances']['CZK']-in_czk
+                    account['balances']['CZK'] = account['balances']['CZK']-minus
+                    account['history'][time] = f"{to}: -{minus:.2f} CZK"
                     with open('data/accounts.json', 'w') as file:
-                            file.write(json.dumps(accounts, indent=4))
+                        file.write(json.dumps(accounts, indent=4))
             return account
                 
-
 if __name__ == '__main__':
     app.run(debug=True)
 
